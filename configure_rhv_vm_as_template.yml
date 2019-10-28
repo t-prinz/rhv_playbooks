@@ -1,0 +1,65 @@
+---
+- name: Ensure VM's are configured to be used as templates
+  hosts: rhv_templates
+  remote_user: root
+
+  tasks:
+    - name: Ensure firewalld is installed
+      package:
+        name: firewalld
+        state: installed
+
+    - name: Ensure firewalld is enabled and started
+      service:
+        name: firewalld
+        enabled: True
+        state: started
+
+    - name: Ensure all packages are updated
+      package:
+        name: '*'
+        state: latest
+
+    - name: Block for RHEL 7 systems
+      block:
+
+      - name: Ensure correct repository is enabled
+        command: "subscription-manager repos --enable=rhel-7-server-rh-common-rpms"
+
+      - name: Ensure ovirt guest agent and cloud-init is installed
+        package:
+          name: "{{ item }}"
+          state: latest
+        with_items:
+          - ovirt-guest-agent-common
+          - cloud-init
+
+      - name: Ensure ovirt guest agent is enabled and started
+        service:
+          name: ovirt-guest-agent
+          enabled: True
+          state: started
+
+      when: ansible_facts.distribution == "RedHat" and ansible_facts.distribution_major_version == "7"
+
+    - name: Block for RHEL 8 systems
+      block:
+
+      - name: Ensure correct repository is enabled
+        command: "subscription-manager repos --enable=rhel-8-for-x86_64-appstream-rpms"
+
+      - name: Ensure ovirt guest agent and cloud-init is installed
+        package:
+          name: "{{ item }}"
+          state: latest
+        with_items:
+          - qemu-guest-agent
+          - cloud-init
+
+      - name: Ensure ovirt guest agent is enabled and started
+        service:
+          name: qemu-guest-agent
+          enabled: True
+          state: started
+
+      when: ansible_facts.distribution == "RedHat" and ansible_facts.distribution_major_version == "8"
