@@ -1,0 +1,74 @@
+---
+- name: Provision a new VM in RHV
+  hosts: localhost
+  vars:
+    credfile: "../../.mycreds/democreds.yml"
+    vm_fq_hostname: "ERROR-NEED-TO-SPECIFY-HOST"
+    rhv_cluster: "Aero"
+    rhv_vm_name: "ERROR-NEED-TO-SPECIFY-VM-NAME"
+    rhv_template: "rhel76-base-template-ci"
+
+  tasks:
+
+    - name: Check for credentials file
+      stat:
+        path: "{{ credfile }}"
+      register: stat_results
+
+    - name: Define credentials using local file
+      block:
+
+      - name: Include variable definitions from local file
+        include_vars:
+          file: "{{ credfile }}"
+
+      - name: Define RHV credentials based on local file
+        set_fact:
+          rhv_auth:
+            hostname: "{{ cf_rhv_hostname }}"
+            insecure: "{{ cf_rhv_insecure }}"
+            password: "{{ cf_rhv_password }}"
+            username: "{{ cf_rhv_username }}"
+
+      when: stat_results.stat.exists
+
+    - name: Define credentials using Ansible Tower custom credentials
+      block:
+
+      - name: Define RHV credentials based on custom credential
+        set_fact:
+          rhv_auth:
+            hostname: "{{ at_rhv_hostname }}"
+            insecure: "{{ at_rhv_insecure }}"
+            password: "{{ at_rhv_password }}"
+            username: "{{ at_rhv_username }}"
+
+      when: not stat_results.stat.exists
+
+#    - name: Print variable
+#      debug:
+#        var: rhv_auth
+
+    - name: Define initialization parameters
+      set_fact:
+        rhv_cloud_init:
+          host_name: "{{ vm_fq_hostname }}"
+
+#    - name: Print variable
+#      debug:
+#        var: rhv_cloud_init
+
+    - name: Provision VM from template
+      ovirt_vm:
+        auth: "{{ rhv_auth }}"
+        cloud_init: "{{ rhv_cloud_init }}"
+        cluster: "{{ rhv_cluster }}"
+        name: "{{ rhv_vm_name }}"
+        state: running
+        template: "{{ rhv_template }}"
+        wait: yes
+      register: prov_status
+
+#    - name: Provisioning output
+#      debug:
+#        var: prov_status
