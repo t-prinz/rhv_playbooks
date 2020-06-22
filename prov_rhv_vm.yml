@@ -2,7 +2,7 @@
 - name: Provision a new VM in RHV
   hosts: localhost
   vars:
-    credfile: "../../.mycreds/democreds.yml"
+    credfile: "../../../.mycreds/democreds.yml"
     vm_fq_hostname: "ERROR-NEED-TO-SPECIFY-HOST"
     rhv_cluster: "Aero"
     rhv_vm_name: "ERROR-NEED-TO-SPECIFY-VM-NAME"
